@@ -1,0 +1,42 @@
+name: Run Python and SQL Tests
+
+on: [push, pull_request]  # Runs on code push or pull requests
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install Dependencies
+        run: |
+          pip install psycopg2 pandas  # Add other dependencies if needed
+
+      - name: Run SQL Script
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U test_user -d test_db -f dashboard.sql
+
+      - name: Run Python Script
+        run: python data_cleaning.py
